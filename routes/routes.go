@@ -9,7 +9,7 @@ import (
 func InitRoutes(e *echo.Echo, db *sql.DB) {
 	userHandler := handlers.NewUserHandler(db)
 	articleHandler := handlers.NewArticleHandler(db)
-
+	roleHandler := handlers.NewRoleHandler(db)
 	// Get user by id
 	e.GET("/users/:id", userHandler.GetUserByID)
 
@@ -47,4 +47,13 @@ func InitRoutes(e *echo.Echo, db *sql.DB) {
 	e.POST("/articles/:article_id/like/:user_id", articleHandler.LikeArticle)
 
 	//TODO: adding roles and permissions to users
+
+	// get role
+	e.GET("/roles", roleHandler.GetRoles)
+
+	// add role to user
+	e.PUT("/users/:user_id/roles/:role_id", roleHandler.AssignRoleToUser)
+
+	// delete role from user
+	e.DELETE("/users/:user_id/roles/:role_id", roleHandler.RemoveRoleFromUser)
 }

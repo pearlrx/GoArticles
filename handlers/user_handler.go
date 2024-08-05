@@ -6,7 +6,6 @@ import (
 	"database/sql"
 	"github.com/labstack/echo/v4"
 	"golang.org/x/crypto/bcrypt"
-	"log"
 	"net/http"
 	"strconv"
 )
@@ -25,34 +24,37 @@ func (h *UserHandler) CreateUser(c echo.Context) error {
 		return c.JSON(http.StatusBadRequest, map[string]string{"error": "Invalid input"})
 	}
 
-	// Log received user data
-	log.Printf("Received User Data: %+v", user)
-
-	// Validate input
 	if user.Username == "" || user.Email == "" || user.Password == "" {
 		return c.JSON(http.StatusBadRequest, map[string]string{"error": "Empty inputs"})
 	}
 
-	// Hash the password
 	passwordHash, err := bcrypt.GenerateFromPassword([]byte(user.Password), bcrypt.DefaultCost)
 	if err != nil {
-		log.Printf("Error hashing password: %v", err)
 		return c.JSON(http.StatusInternalServerError, map[string]string{"error": "Failed to hash password"})
 	}
-
 	user.PasswordHash = string(passwordHash)
+
+	tx, err := h.DB.BeginTx(c.Request().Context(), nil)
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, map[string]string{"error": "Failed to begin transaction"})
+	}
 
 	query := `INSERT INTO users (username, email, password_hash, created_at, updated_at) 
               VALUES ($1, $2, $3, NOW(), NOW()) RETURNING id`
-
-	// Log query and data being sent to the database
-	log.Printf("Executing query: %s with values: %s, %s, %s", query, user.Username, user.Email, user.PasswordHash)
-
-	err = h.DB.QueryRowContext(c.Request().Context(), query, user.Username, user.Email, user.PasswordHash).Scan(&user.ID)
-
+	err = tx.QueryRowContext(c.Request().Context(), query, user.Username, user.Email, user.PasswordHash).Scan(&user.ID)
 	if err != nil {
-		log.Printf("Error executing query: %v", err)
 		return c.JSON(http.StatusInternalServerError, map[string]string{"error": "Failed to create user"})
+	}
+
+	defaultRoleID := 3
+	query = `INSERT INTO user_roles (user_id, role_id) VALUES ($1, $2)`
+	_, err = tx.ExecContext(c.Request().Context(), query, user.ID, defaultRoleID)
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, map[string]string{"error": "Failed to assign default role"})
+	}
+
+	if err = tx.Commit(); err != nil {
+		return c.JSON(http.StatusInternalServerError, map[string]string{"error": "Failed to commit transaction"})
 	}
 
 	return c.JSON(http.StatusCreated, user)
@@ -147,7 +149,7 @@ func (h *UserHandler) getUserRoles(ctx context.Context, userID int) ([]models.Us
 	var roles []models.UserRole
 	for rows.Next() {
 		var role models.UserRole
-		if err := rows.Scan(&role.UserID, &role.RoleID); err != nil {
+		if err = rows.Scan(&role.UserID, &role.RoleID); err != nil {
 			return nil, err
 		}
 		roles = append(roles, role)
@@ -167,7 +169,7 @@ func (h *UserHandler) getUserSettings(ctx context.Context, userID int) ([]models
 	var settings []models.UserSettings
 	for rows.Next() {
 		var setting models.UserSettings
-		if err := rows.Scan(&setting.UserID, &setting.SettingKey, &setting.SettingValue); err != nil {
+		if err = rows.Scan(&setting.UserID, &setting.SettingKey, &setting.SettingValue); err != nil {
 			return nil, err
 		}
 		settings = append(settings, setting)
