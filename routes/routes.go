@@ -38,8 +38,6 @@ func InitRoutes(e *echo.Echo, db *sql.DB) {
 	// Like an article by user ID
 	e.POST("/articles/:article_id/like/:user_id", articleHandler.LikeArticle)
 
-	//TODO: adding roles and permissions to users
-
 	// Get role
 	e.GET("/roles", roleHandler.GetRoles)
 	// Add role to user
@@ -53,4 +51,6 @@ func InitRoutes(e *echo.Echo, db *sql.DB) {
 	e.DELETE("/roles/:role_id/permissions/:permission_id", permissionHandler.RemovePermissionFromRole)
 	// Get permission
 	e.GET("/roles/:role_id/permissions", permissionHandler.GetPermissionsByRole)
+
+	//TODO: creating logger with logrus
 }
