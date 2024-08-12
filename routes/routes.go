@@ -4,13 +4,17 @@ import (
 	"GoArticles/handlers"
 	"database/sql"
 	"github.com/labstack/echo/v4"
+	"github.com/sirupsen/logrus"
 )
 
 func InitRoutes(e *echo.Echo, db *sql.DB) {
-	userHandler := handlers.NewUserHandler(db)
-	articleHandler := handlers.NewArticleHandler(db)
-	roleHandler := handlers.NewRoleHandler(db)
-	permissionHandler := handlers.NewPermissionHandler(db)
+
+	logger := logrus.New()
+
+	userHandler := handlers.NewUserHandler(db, logger)
+	articleHandler := handlers.NewArticleHandler(db, logger)
+	roleHandler := handlers.NewRoleHandler(db, logger)
+	permissionHandler := handlers.NewPermissionHandler(db, logger)
 
 	// Get user by id
 	e.GET("/users/:id", userHandler.GetUserByID)
@@ -22,9 +26,9 @@ func InitRoutes(e *echo.Echo, db *sql.DB) {
 	e.POST("/users", userHandler.CreateUser)
 	// Removing a user by id
 	e.DELETE("/users/:id", userHandler.DeleteUser)
+
 	// Get article by ID
 	e.GET("/articles/:id", articleHandler.GetArticleByID)
-
 	// Create a new article
 	e.POST("/articles", articleHandler.CreateArticle)
 	// Update existing article by ID
@@ -52,5 +56,5 @@ func InitRoutes(e *echo.Echo, db *sql.DB) {
 	// Get permission
 	e.GET("/roles/:role_id/permissions", permissionHandler.GetPermissionsByRole)
 
-	//TODO: creating logger with logrus
+	//TODO: add setting handler
 }
