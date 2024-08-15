@@ -18,9 +18,9 @@ type UserRole struct {
 }
 
 type UserSettings struct {
-	UserID       int `json:"user_id"`
-	SettingKey   int `json:"setting_key"`
-	SettingValue int `json:"setting_value"`
+	UserID       int    `json:"user_id"`
+	SettingKey   string `json:"setting_key"`
+	SettingValue string `json:"setting_value"`
 }
 
 type Role struct {

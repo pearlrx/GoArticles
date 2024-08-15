@@ -15,17 +15,20 @@ func InitRoutes(e *echo.Echo, db *sql.DB) {
 	articleHandler := handlers.NewArticleHandler(db, logger)
 	roleHandler := handlers.NewRoleHandler(db, logger)
 	permissionHandler := handlers.NewPermissionHandler(db, logger)
+	userSettingsHandler := handlers.NewUserSettingsHandler(db, logger)
 
 	// Get user by id
 	e.GET("/users/:id", userHandler.GetUserByID)
 	// Get user role by id
 	e.GET("/users/:id/roles", userHandler.GetUserRoles)
-	// Get user settings by ID
-	e.GET("/users/:id/settings", userHandler.GetUserSettings)
 	// Creating new user
 	e.POST("/users", userHandler.CreateUser)
 	// Removing a user by id
 	e.DELETE("/users/:id", userHandler.DeleteUser)
+
+	// Get user settings by ID
+	e.GET("/users/:user_id/settings", userSettingsHandler.GetUserSettings)
+	e.PUT("/users/:user_id/settings", userSettingsHandler.UpdateUserSettings)
 
 	// Get article by ID
 	e.GET("/articles/:id", articleHandler.GetArticleByID)

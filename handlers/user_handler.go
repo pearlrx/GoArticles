@@ -71,6 +71,18 @@ func (h *UserHandler) CreateUser(c echo.Context) error {
 		return c.JSON(http.StatusInternalServerError, map[string]string{"error": "Failed to assign default role"})
 	}
 
+	// Установка дефолтных настроек
+	query = `INSERT INTO user_settings (user_id, setting_key, setting_value)
+             SELECT $1, s.setting_key, s.default_value
+             FROM settings s
+             ON CONFLICT (user_id, setting_key) DO NOTHING`
+	_, err = tx.ExecContext(c.Request().Context(), query, user.ID)
+	if err != nil {
+		tx.Rollback() // Откат транзакции при ошибке
+		h.Logger.WithError(err).Error("Failed to set default user settings")
+		return c.JSON(http.StatusInternalServerError, map[string]string{"error": "Failed to set default user settings"})
+	}
+
 	if err = tx.Commit(); err != nil {
 		h.Logger.WithError(err).Error("Failed to commit transaction")
 		return c.JSON(http.StatusInternalServerError, map[string]string{"error": "Failed to commit transaction"})
@@ -172,23 +184,6 @@ func (h *UserHandler) GetUserRoles(c echo.Context) error {
 	return c.JSON(http.StatusOK, roles)
 }
 
-func (h *UserHandler) GetUserSettings(c echo.Context) error {
-	id, err := strconv.Atoi(c.Param("id"))
-	if err != nil {
-		h.Logger.WithError(err).WithField("user_id", id).Warn("Invalid user ID format")
-		return c.JSON(http.StatusBadRequest, map[string]string{"error": "Invalid user ID"})
-	}
-
-	settings, err := h.getUserSettings(c.Request().Context(), id)
-	if err != nil {
-		h.Logger.WithError(err).WithField("user_id", id).Warn("Failed to retrieve settings")
-		return c.JSON(http.StatusInternalServerError, map[string]string{"error": "Failed to retrieve settings"})
-	}
-
-	h.Logger.WithField("user_id", id).Info("User setting found successfully")
-	return c.JSON(http.StatusOK, settings)
-}
-
 func (h *UserHandler) getUserByID(ctx context.Context, id int) (*models.User, error) {
 	h.Logger.Infof("Fetching user with ID %d", id)
 
@@ -228,29 +223,4 @@ func (h *UserHandler) getUserRoles(ctx context.Context, userID int) ([]models.Us
 
 	h.Logger.Infof("Successfully fetched %d roles for user with ID %d", len(roles), userID)
 	return roles, nil
-}
-
-func (h *UserHandler) getUserSettings(ctx context.Context, userID int) ([]models.UserSettings, error) {
-	h.Logger.Infof("Fetching settings for user with ID %d", userID)
-
-	query := `SELECT user_id, setting_key, setting_value FROM user_settings WHERE user_id=$1`
-	rows, err := h.DB.QueryContext(ctx, query, userID)
-	if err != nil {
-		h.Logger.WithError(err).Errorf("Failed to fetch settings for user with ID %d", userID)
-		return nil, err
-	}
-	defer rows.Close()
-
-	var settings []models.UserSettings
-	for rows.Next() {
-		var setting models.UserSettings
-		if err = rows.Scan(&setting.UserID, &setting.SettingKey, &setting.SettingValue); err != nil {
-			h.Logger.WithError(err).Errorf("Error scanning settings for user with ID %d", userID)
-			return nil, err
-		}
-		settings = append(settings, setting)
-	}
-
-	h.Logger.Infof("Successfully fetched %d settings for user with ID %d", len(settings), userID)
-	return settings, nil
 }
