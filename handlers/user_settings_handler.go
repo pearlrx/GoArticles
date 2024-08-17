@@ -42,16 +42,37 @@ func (h *UserSettingsHandler) GetUserSettings(c echo.Context) error {
 }
 
 func (h *UserSettingsHandler) UpdateUserSettings(c echo.Context) error {
-	userID, err := strconv.Atoi(c.Param("user_id"))
-	if err != nil {
-		h.Logger.WithError(err).Warn("Invalid user ID")
-		return c.JSON(http.StatusBadRequest, map[string]string{"error": "Invalid user ID"})
+	userID := c.Param("user_id")
+	if userID == "" {
+		return c.JSON(http.StatusBadRequest, map[string]string{"error": "User ID is required"})
 	}
 
-	var settings []models.UserSettings
-	if err = c.Bind(&settings); err != nil {
-		h.Logger.WithError(err).Warn("Failed to bind settings data")
+	var inputSettings map[string]string
+	if err := c.Bind(&inputSettings); err != nil {
+		h.Logger.WithError(err).Warn("Failed to bind user settings data")
 		return c.JSON(http.StatusBadRequest, map[string]string{"error": "Invalid input"})
+	}
+
+	if _, ok := inputSettings["user_id"]; ok {
+		delete(inputSettings, "user_id")
+	}
+
+	query := `SELECT setting_key FROM settings`
+	rows, err := h.DB.QueryContext(c.Request().Context(), query)
+	if err != nil {
+		h.Logger.WithError(err).Error("Failed to retrieve settings keys")
+		return c.JSON(http.StatusInternalServerError, map[string]string{"error": "Failed to retrieve settings keys"})
+	}
+	defer rows.Close()
+
+	validKeys := make(map[string]bool)
+	for rows.Next() {
+		var key string
+		if err = rows.Scan(&key); err != nil {
+			h.Logger.WithError(err).Error("Failed to scan setting key")
+			return c.JSON(http.StatusInternalServerError, map[string]string{"error": "Failed to process settings keys"})
+		}
+		validKeys[key] = true
 	}
 
 	tx, err := h.DB.BeginTx(c.Request().Context(), nil)
@@ -60,15 +81,21 @@ func (h *UserSettingsHandler) UpdateUserSettings(c echo.Context) error {
 		return c.JSON(http.StatusInternalServerError, map[string]string{"error": "Failed to begin transaction"})
 	}
 
-	for _, setting := range settings {
-		query := `INSERT INTO user_settings (user_id, setting_key, setting_value)
-                  VALUES ($1, $2, $3)
-                  ON CONFLICT (user_id, setting_key) DO UPDATE
-                  SET setting_value = EXCLUDED.setting_value`
-		_, err = tx.ExecContext(c.Request().Context(), query, userID, setting.SettingKey, setting.SettingValue)
-		if err != nil {
+	for key, value := range inputSettings {
+		if !validKeys[key] {
+			h.Logger.Warnf("Invalid setting key: %s", key)
 			tx.Rollback() // Откат транзакции при ошибке
-			h.Logger.WithError(err).Error("Failed to update user settings")
+			return c.JSON(http.StatusBadRequest, map[string]string{"error": "Invalid setting key: " + key})
+		}
+
+		// Выполняем вставку или обновление настроек
+		query = `INSERT INTO user_settings (user_id, setting_key, setting_value)
+		         VALUES ($1, $2, $3)
+		         ON CONFLICT (user_id, setting_key) DO UPDATE
+		         SET setting_value = EXCLUDED.setting_value`
+		if _, err = tx.ExecContext(c.Request().Context(), query, userID, key, value); err != nil {
+			h.Logger.WithError(err).Error("Failed to update user setting")
+			tx.Rollback() // Откат транзакции при ошибке
 			return c.JSON(http.StatusInternalServerError, map[string]string{"error": "Failed to update user settings"})
 		}
 	}

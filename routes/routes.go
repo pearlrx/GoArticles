@@ -28,7 +28,7 @@ func InitRoutes(e *echo.Echo, db *sql.DB) {
 
 	// Get user settings by ID
 	e.GET("/users/:user_id/settings", userSettingsHandler.GetUserSettings)
-	e.PUT("/users/:user_id/settings", userSettingsHandler.UpdateUserSettings)
+	e.PATCH("/users/:user_id/settings", userSettingsHandler.UpdateUserSettings)
 
 	// Get article by ID
 	e.GET("/articles/:id", articleHandler.GetArticleByID)
@@ -59,5 +59,5 @@ func InitRoutes(e *echo.Echo, db *sql.DB) {
 	// Get permission
 	e.GET("/roles/:role_id/permissions", permissionHandler.GetPermissionsByRole)
 
-	//TODO: add setting handler
+	//TODO: add categories to articles
 }
