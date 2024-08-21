@@ -13,6 +13,7 @@ func InitRoutes(e *echo.Echo, db *sql.DB) {
 
 	userHandler := handlers.NewUserHandler(db, logger)
 	articleHandler := handlers.NewArticleHandler(db, logger)
+	categoryHandler := handlers.NewCategoryHandler(db, logger)
 	roleHandler := handlers.NewRoleHandler(db, logger)
 	permissionHandler := handlers.NewPermissionHandler(db, logger)
 	userSettingsHandler := handlers.NewUserSettingsHandler(db, logger)
@@ -38,12 +39,19 @@ func InitRoutes(e *echo.Echo, db *sql.DB) {
 	e.PUT("/articles/:id", articleHandler.UpdateArticle)
 	// Delete article by ID
 	e.DELETE("/articles/:id", articleHandler.DeleteArticle)
-	// Add a category to an article
-	e.POST("/articles/:article_id/categories/:category_id", articleHandler.AddArticleCategory)
 	// Add a tag to an article
 	e.POST("/articles/:article_id/tags/:tag_id", articleHandler.AddArticleTag)
 	// Like an article by user ID
 	e.POST("/articles/:article_id/like/:user_id", articleHandler.LikeArticle)
+
+	// Add a category to an article
+	e.POST("/articles/:article_id/categories/:category_id", categoryHandler.AddArticleCategory)
+	// Delete category from article
+	e.DELETE("/articles/:article_id/categories/:category_id", categoryHandler.RemoveCategoryFromArticle)
+	// Get articles for categories
+	e.GET("/articles/:article_id/categories", categoryHandler.GetCategoriesForArticle)
+	// Get categories for articles
+	e.GET("/categories/:category_id/articles", categoryHandler.GetArticlesForCategory)
 
 	// Get role
 	e.GET("/roles", roleHandler.GetRoles)

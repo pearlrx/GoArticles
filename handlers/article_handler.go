@@ -91,35 +91,12 @@ func (h *ArticleHandler) DeleteArticle(c echo.Context) error {
 	}
 
 	h.Logger.Infof("Deleting article with ID %d", id)
-	if err := h.deleteArticle(c.Request().Context(), id); err != nil {
+	if err = h.deleteArticle(c.Request().Context(), id); err != nil {
 		h.Logger.WithError(err).Errorf("Failed to delete article with ID %d", id)
 		return c.JSON(http.StatusInternalServerError, map[string]string{"error": "Failed to delete article"})
 	}
 
 	h.Logger.Infof("Successfully deleted article with ID %d", id)
-	return c.NoContent(http.StatusNoContent)
-}
-
-func (h *ArticleHandler) AddArticleCategory(c echo.Context) error {
-	articleID, err := strconv.Atoi(c.Param("article_id"))
-	if err != nil {
-		h.Logger.WithError(err).Warn("Invalid article ID provided")
-		return c.JSON(http.StatusBadRequest, map[string]string{"error": "Invalid article ID"})
-	}
-
-	categoryID, err := strconv.Atoi(c.Param("category_id"))
-	if err != nil {
-		h.Logger.WithError(err).Warn("Invalid category ID provided")
-		return c.JSON(http.StatusBadRequest, map[string]string{"error": "Invalid category ID"})
-	}
-
-	h.Logger.Infof("Adding category ID %d to article ID %d", categoryID, articleID)
-	if err = h.addArticleCategory(c.Request().Context(), articleID, categoryID); err != nil {
-		h.Logger.WithError(err).Errorf("Failed to add category ID %d to article ID %d", categoryID, articleID)
-		return c.JSON(http.StatusInternalServerError, map[string]string{"error": "Failed to add category to article"})
-	}
-
-	h.Logger.Infof("Successfully added category ID %d to article ID %d", categoryID, articleID)
 	return c.NoContent(http.StatusNoContent)
 }
 
@@ -225,20 +202,6 @@ func (h *ArticleHandler) deleteArticle(ctx context.Context, id int) error {
 	}
 
 	h.Logger.Infof("Successfully deleted article with ID %d", id)
-	return nil
-}
-
-func (h *ArticleHandler) addArticleCategory(ctx context.Context, articleID, categoryID int) error {
-	h.Logger.Infof("Adding category ID %d to article ID %d", categoryID, articleID)
-
-	query := `INSERT INTO article_categories (article_id, category_id) VALUES ($1, $2)`
-	_, err := h.DB.ExecContext(ctx, query, articleID, categoryID)
-	if err != nil {
-		h.Logger.WithError(err).Errorf("Failed to add category ID %d to article ID %d", categoryID, articleID)
-		return err
-	}
-
-	h.Logger.Infof("Successfully added category ID %d to article ID %d", categoryID, articleID)
 	return nil
 }
 

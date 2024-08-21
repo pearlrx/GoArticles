@@ -12,8 +12,8 @@ type Article struct {
 }
 
 type ArticleCategory struct {
-	ArticleID int    `json:"article_id"`
-	Category  string `json:"category_id"`
+	ArticleID int `json:"article_id"`
+	Category  int `json:"category_id"`
 }
 
 type ArticleTag struct {
