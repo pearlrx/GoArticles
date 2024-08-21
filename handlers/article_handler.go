@@ -27,122 +27,96 @@ func NewArticleHandler(db *sql.DB, logger *logrus.Logger) *ArticleHandler {
 func (h *ArticleHandler) GetArticleByID(c echo.Context) error {
 	id, err := strconv.Atoi(c.Param("id"))
 	if err != nil {
-		h.Logger.WithError(err).Warn("Invalid article ID provided")
 		return c.JSON(http.StatusBadRequest, map[string]string{"error": "Invalid article ID"})
 	}
 
-	h.Logger.Infof("Fetching article with ID %d", id)
 	article, err := h.getArticleByID(c.Request().Context(), id)
 	if err != nil {
-		h.Logger.WithError(err).Errorf("Failed to fetch article with ID %d", id)
 		return c.JSON(http.StatusInternalServerError, map[string]string{"error": "Article not found"})
 	}
 
-	h.Logger.Infof("Successfully fetched article with ID %d", id)
 	return c.JSON(http.StatusOK, article)
 }
 
 func (h *ArticleHandler) CreateArticle(c echo.Context) error {
 	var article models.Article
 	if err := c.Bind(&article); err != nil {
-		h.Logger.WithError(err).Warn("Failed to bind article data")
 		return c.JSON(http.StatusBadRequest, map[string]string{"error": "Invalid input"})
 	}
 
-	h.Logger.Infof("Creating a new article with title %s", article.Title)
 	id, err := h.createArticle(c.Request().Context(), article)
 	if err != nil {
-		h.Logger.WithError(err).Error("Failed to create article")
 		return c.JSON(http.StatusInternalServerError, map[string]string{"error": "Failed to create article"})
 	}
 
-	h.Logger.Infof("Successfully created article with ID %d", id)
 	return c.JSON(http.StatusCreated, map[string]int{"id": id})
 }
 
 func (h *ArticleHandler) UpdateArticle(c echo.Context) error {
 	id, err := strconv.Atoi(c.Param("id"))
 	if err != nil {
-		h.Logger.WithError(err).Warn("Invalid article ID provided")
 		return c.JSON(http.StatusBadRequest, map[string]string{"error": "Invalid article ID"})
 	}
 
 	var article models.Article
 	if err = c.Bind(&article); err != nil {
-		h.Logger.WithError(err).Warn("Failed to bind article data")
 		return c.JSON(http.StatusBadRequest, map[string]string{"error": "Invalid input"})
 	}
 
-	h.Logger.Infof("Updating article with ID %d", id)
 	if err = h.updateArticle(c.Request().Context(), id, article); err != nil {
-		h.Logger.WithError(err).Errorf("Failed to update article with ID %d", id)
 		return c.JSON(http.StatusInternalServerError, map[string]string{"error": "Failed to update article"})
 	}
 
-	h.Logger.Infof("Successfully updated article with ID %d", id)
 	return c.NoContent(http.StatusNoContent)
 }
 
 func (h *ArticleHandler) DeleteArticle(c echo.Context) error {
 	id, err := strconv.Atoi(c.Param("id"))
 	if err != nil {
-		h.Logger.WithError(err).Warn("Invalid article ID provided")
 		return c.JSON(http.StatusBadRequest, map[string]string{"error": "Invalid article ID"})
 	}
 
-	h.Logger.Infof("Deleting article with ID %d", id)
 	if err = h.deleteArticle(c.Request().Context(), id); err != nil {
-		h.Logger.WithError(err).Errorf("Failed to delete article with ID %d", id)
 		return c.JSON(http.StatusInternalServerError, map[string]string{"error": "Failed to delete article"})
 	}
 
-	h.Logger.Infof("Successfully deleted article with ID %d", id)
 	return c.NoContent(http.StatusNoContent)
 }
 
 func (h *ArticleHandler) AddArticleTag(c echo.Context) error {
 	articleID, err := strconv.Atoi(c.Param("article_id"))
 	if err != nil {
-		h.Logger.WithError(err).Warn("Invalid article ID provided")
 		return c.JSON(http.StatusBadRequest, map[string]string{"error": "Invalid article ID"})
 	}
 
 	tagID, err := strconv.Atoi(c.Param("tag_id"))
 	if err != nil {
-		h.Logger.WithError(err).Warn("Invalid tag ID provided")
 		return c.JSON(http.StatusBadRequest, map[string]string{"error": "Invalid tag ID"})
 	}
 
-	h.Logger.Infof("Adding tag ID %d to article ID %d", tagID, articleID)
 	if err = h.addArticleTag(c.Request().Context(), articleID, tagID); err != nil {
-		h.Logger.WithError(err).Errorf("Failed to add tag ID %d to article ID %d", tagID, articleID)
 		return c.JSON(http.StatusInternalServerError, map[string]string{"error": "Failed to add tag to article"})
 	}
 
-	h.Logger.Infof("Successfully added tag ID %d to article ID %d", tagID, articleID)
 	return c.NoContent(http.StatusNoContent)
 }
 
 func (h *ArticleHandler) LikeArticle(c echo.Context) error {
 	articleID, err := strconv.Atoi(c.Param("article_id"))
 	if err != nil {
-		h.Logger.WithError(err).Warn("Invalid article ID provided")
 		return c.JSON(http.StatusBadRequest, map[string]string{"error": "Invalid article ID"})
 	}
 
 	userID, err := strconv.Atoi(c.Param("user_id"))
 	if err != nil {
-		h.Logger.WithError(err).Warn("Invalid user ID provided")
 		return c.JSON(http.StatusBadRequest, map[string]string{"error": "Invalid user ID"})
 	}
 
 	h.Logger.Infof("User ID %d likes article ID %d", userID, articleID)
 	if err = h.likeArticle(c.Request().Context(), articleID, userID); err != nil {
-		h.Logger.WithError(err).Errorf("Failed to like article ID %d by user ID %d", articleID, userID)
 		return c.JSON(http.StatusInternalServerError, map[string]string{"error": "Failed to like article"})
 	}
 
-	h.Logger.Infof("User ID %d successfully liked article ID %d", userID, articleID)
 	return c.NoContent(http.StatusNoContent)
 }
 

@@ -67,5 +67,5 @@ func InitRoutes(e *echo.Echo, db *sql.DB) {
 	// Get permission
 	e.GET("/roles/:role_id/permissions", permissionHandler.GetPermissionsByRole)
 
-	//TODO: add categories to articles
+	//TODO: add tags to articles
 }
