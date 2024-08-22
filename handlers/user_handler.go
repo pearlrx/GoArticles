@@ -129,13 +129,11 @@ func (h *UserHandler) DeleteUser(c echo.Context) error {
 }
 
 func (h *UserHandler) deleteUserDependencies(ctx context.Context, userID int) error {
-	// Пример удаления зависимостей. Обновите запросы в зависимости от вашей схемы БД.
 	queries := []string{
 		`DELETE FROM article_likes WHERE user_id=$1`,
 		`DELETE FROM article_tags WHERE article_id IN (SELECT id FROM articles WHERE author_id=$1)`,
 		`DELETE FROM article_categories WHERE article_id IN (SELECT id FROM articles WHERE author_id=$1)`,
 		`DELETE FROM articles WHERE author_id=$1`,
-		// Добавьте дополнительные запросы для других зависимостей
 	}
 
 	for _, query := range queries {

@@ -35,13 +35,10 @@ func (h *CategoryHandler) AddArticleCategory(c echo.Context) error {
 		return c.JSON(http.StatusBadRequest, map[string]string{"error": "Invalid category ID"})
 	}
 
-	h.Logger.Infof("Adding category ID %d to article ID %d", categoryID, articleID)
 	if err = h.addArticleCategory(c.Request().Context(), articleID, categoryID); err != nil {
-		h.Logger.WithError(err).Errorf("Failed to add category ID %d to article ID %d", categoryID, articleID)
 		return c.JSON(http.StatusInternalServerError, map[string]string{"error": "Failed to add category to article"})
 	}
-
-	h.Logger.Infof("Successfully added category ID %d to article ID %d", categoryID, articleID)
+	
 	return c.NoContent(http.StatusNoContent)
 }
 

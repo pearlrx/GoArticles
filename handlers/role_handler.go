@@ -68,13 +68,11 @@ func (h *RoleHandler) AssignRoleToUser(c echo.Context) error {
 		return c.JSON(http.StatusBadRequest, map[string]string{"error": "Invalid role ID"})
 	}
 
-	// Удаляем все роли у пользователя, кроме роли с ID 3
 	if err = h.removeRoleFromUser(c.Request().Context(), userID, 3); err != nil {
 		h.Logger.WithError(err).Error("Failed to remove existing roles from user")
 		return c.JSON(http.StatusInternalServerError, map[string]string{"error": "Failed to remove existing roles"})
 	}
 
-	// Назначаем новую роль пользователю
 	if err = h.assignRoleToUser(c.Request().Context(), userID, roleID); err != nil {
 		h.Logger.WithError(err).Error("Failed to assign new role to user")
 		return c.JSON(http.StatusInternalServerError, map[string]string{"error": "Failed to assign new role to user"})
