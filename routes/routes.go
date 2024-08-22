@@ -29,6 +29,7 @@ func InitRoutes(e *echo.Echo, db *sql.DB) {
 
 	// Get user settings by ID
 	e.GET("/users/:user_id/settings", userSettingsHandler.GetUserSettings)
+	// Update user settings
 	e.PATCH("/users/:user_id/settings", userSettingsHandler.UpdateUserSettings)
 
 	// Get article by ID
